@@ -1,0 +1,19 @@
+{
+  "name": "sg-monitor",
+  "version": "1.0.0",
+  "description": "Sistema de monitoramento automatizado de e-commerce Saint Germain",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "monitor": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.44.0",
+    "twilio": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
