@@ -9,6 +9,7 @@ const simulateRoute = require('../routes/simulate');
 function buildServer() {
   const app = express();
 
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(express.json({ limit: '300kb' }));
   app.use(morgan('combined'));

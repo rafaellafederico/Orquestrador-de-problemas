@@ -4,8 +4,6 @@ require('dotenv').config();
 const REQUIRED = [
   'GEMINI_API_KEY',
   'META_VERIFY_TOKEN',
-  'WHATSAPP_PHONE_ID',
-  'WHATSAPP_TOKEN',
   'SUPABASE_URL',
   'SUPABASE_KEY',
 ];
