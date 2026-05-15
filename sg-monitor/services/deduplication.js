@@ -1,5 +1,6 @@
 const { findDuplicates } = require('../database/incidentsRepository');
 
+// In-memory cooldown tracker: groupKey → last alert timestamp
 const alertCooldown = new Map();
 
 function upgradePriority(priority) {
@@ -11,23 +12,25 @@ function upgradePriority(priority) {
 async function enrichWithDedup(incident) {
   const windowMinutes = Number(process.env.DUPLICATE_WINDOW_MINUTES || 10);
   const threshold = Number(process.env.DUPLICATE_THRESHOLD || 5);
+
   const duplicates = await findDuplicates({
     sector: incident.sector,
     incidentType: incident.incident_type,
     windowMinutes,
   });
 
-  const groupedCount = duplicates.length + 1;
+  // +1 to include the current (not yet saved) incident
+  const grouped_count = duplicates.length + 1;
   let priority = incident.priority;
-  let severity = incident.severity_score;
+  let severity_score = incident.severity_score;
 
-  if (groupedCount >= threshold) {
+  if (grouped_count >= threshold) {
     priority = upgradePriority(priority);
-    severity = Math.min(100, severity + 15);
+    severity_score = Math.min(100, severity_score + 15);
   }
 
   const groupKey = `${incident.sector}:${incident.incident_type}`;
-  return { ...incident, groupedCount, priority, severity_score: severity, groupKey };
+  return { ...incident, grouped_count, priority, severity_score, groupKey };
 }
 
 function shouldSendAlert(groupKey) {
