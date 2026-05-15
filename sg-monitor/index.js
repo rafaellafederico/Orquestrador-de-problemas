@@ -6,9 +6,15 @@ const { validateEnv } = require('./config/env');
 
 validateEnv();
 
-const PORT = Number(process.env.PORT || 3000);
 const app = buildServer();
 
-app.listen(PORT, () => {
-  logger.info('server_started', { port: PORT, env: process.env.NODE_ENV || 'development' });
-});
+// Vercel exporta o app diretamente (sem listen)
+// Localmente, sobe o servidor normal
+if (require.main === module) {
+  const PORT = Number(process.env.PORT || 3000);
+  app.listen(PORT, () => {
+    logger.info('server_started', { port: PORT });
+  });
+}
+
+module.exports = app;
