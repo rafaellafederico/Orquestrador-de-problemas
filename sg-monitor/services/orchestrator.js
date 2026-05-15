@@ -1,7 +1,7 @@
 const { classifyIncident } = require('../openai/classifier');
 const { insertIncident } = require('../database/incidentsRepository');
 const { enrichWithDedup, shouldSendAlert } = require('./deduplication');
-const { sendWhatsAppAlert } = require('../whatsapp/whatsappService');
+const { sendAlert } = require('../whatsapp/whatsappService');
 const { logger } = require('../utils/logger');
 
 async function processIncomingMessage(input) {
@@ -42,7 +42,7 @@ async function processIncomingMessage(input) {
   logger.info('incident_saved', { id: saved.id, priority: saved.priority, grouped_count: saved.grouped_count });
 
   if (shouldSendAlert(groupKey)) {
-    await sendWhatsAppAlert({ ...saved, grouped_count: enriched.grouped_count });
+    await sendAlert({ ...saved, grouped_count: enriched.grouped_count });
     logger.warn('alert_sent', { id: saved.id, priority: saved.priority, groupKey });
   } else {
     logger.info('alert_suppressed_by_cooldown', { groupKey });

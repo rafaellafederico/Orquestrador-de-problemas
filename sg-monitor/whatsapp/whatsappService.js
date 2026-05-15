@@ -19,53 +19,36 @@ function formatTimestamp(isoString) {
 
 function buildAlertMessage(data) {
   const lines = [
-    '🚨 ALERTA SG',
-    '',
     `Tipo: ${data.incident_type}`,
     `Prioridade: ${data.priority}`,
     `Confiança: ${Math.round(data.confidence)}%`,
-    `Severidade: ${Math.round(data.severity_score)}/100`,
     `Ocorrências(10min): ${data.grouped_count || 1}`,
     '',
-    'Mensagem:',
-    `"${data.message}"`,
-    '',
-    'Usuário:',
-    `@${data.user}`,
-    '',
-    'Resumo:',
-    data.summary || '-',
-    '',
-    'Horário:',
-    formatTimestamp(data.created_at),
+    `Mensagem: "${data.message}"`,
+    `Usuário: @${data.user}`,
+    `Resumo: ${data.summary || '-'}`,
+    `Horário: ${formatTimestamp(data.created_at)}`,
   ];
-
   return lines.join('\n');
 }
 
-async function sendWhatsAppAlert(incident) {
-  const phoneId = process.env.WHATSAPP_PHONE_ID;
-  const token = process.env.WHATSAPP_TOKEN;
-  const alertPhone = process.env.ALERT_PHONE || '5547992798329';
+function priorityToTag(priority) {
+  const map = { CRITICAL: 'rotating_light', HIGH: 'warning', MEDIUM: 'bell', LOW: 'information_source' };
+  return map[priority] || 'bell';
+}
 
-  if (!phoneId || !token) {
-    throw new Error('WHATSAPP_PHONE_ID and WHATSAPP_TOKEN must be set');
-  }
-
-  const url = `https://graph.facebook.com/v22.0/${phoneId}/messages`;
-  const payload = {
-    messaging_product: 'whatsapp',
-    to: alertPhone,
-    type: 'text',
-    text: { body: buildAlertMessage(incident) },
-  };
+async function sendAlert(incident) {
+  const topic = process.env.NTFY_TOPIC || 'sgmonitor-rafaella';
+  const url = `https://ntfy.sh/${topic}`;
 
   await retry(
     () =>
-      axios.post(url, payload, {
+      axios.post(url, buildAlertMessage(incident), {
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Title: `🚨 SG Alerta — ${incident.incident_type}`,
+          Priority: incident.priority === 'CRITICAL' ? 'urgent' : incident.priority === 'HIGH' ? 'high' : 'default',
+          Tags: priorityToTag(incident.priority),
+          'Content-Type': 'text/plain',
         },
         timeout: Number(process.env.REQUEST_TIMEOUT_MS || 15000),
       }),
@@ -73,4 +56,4 @@ async function sendWhatsAppAlert(incident) {
   );
 }
 
-module.exports = { sendWhatsAppAlert };
+module.exports = { sendAlert };
