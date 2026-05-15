@@ -2,7 +2,7 @@ require('dotenv').config();
 
 // Validate required variables at startup
 const REQUIRED = [
-  'OPENAI_API_KEY',
+  'GEMINI_API_KEY',
   'META_VERIFY_TOKEN',
   'WHATSAPP_PHONE_ID',
   'WHATSAPP_TOKEN',
@@ -20,8 +20,8 @@ function validateEnv() {
 module.exports = {
   validateEnv,
   PORT: Number(process.env.PORT || 3000),
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
   META_VERIFY_TOKEN: process.env.META_VERIFY_TOKEN,
   META_PAGE_ACCESS_TOKEN: process.env.META_PAGE_ACCESS_TOKEN,
   WHATSAPP_PHONE_ID: process.env.WHATSAPP_PHONE_ID,

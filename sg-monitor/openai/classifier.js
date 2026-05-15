@@ -9,7 +9,7 @@ Campos obrigatórios:
 - sector: string (ex: checkout, pagamento, pix, frete, site, cupom, carrinho)
 - confidence: number de 0 a 100
 - summary: string (resumo em 1 linha)
-- incident_type: string (slug do tipo: checkout_bug, payment_failure, pix_error, site_down, shipping_error, coupon_error, cart_bug, system_lag)
+- incident_type: string (slug: checkout_bug, payment_failure, pix_error, site_down, shipping_error, coupon_error, cart_bug, system_lag)
 - severity_score: number de 0 a 100
 
 DETECTAR como incident=true:
@@ -22,10 +22,10 @@ DETECTAR como incident=true:
 - carrinho bugado, perdeu carrinho, produto sumiu do carrinho
 - "não consigo comprar", "não consegui finalizar", "deu erro"
 
-IGNORAR como incident=false (retornar incident: false):
+IGNORAR como incident=false:
 - elogios, agradecimentos, "amei", "lindo", "chegou perfeito"
 - dúvidas sobre produto ("tem em prata?", "qual o tamanho?")
-- pedidos de desconto, promoções, cupons de desconto
+- pedidos de desconto, promoções
 - perguntas sobre prazo de entrega normal
 - mensagens sem contexto de problema
 
@@ -36,35 +36,36 @@ Exemplos de prioridade:
 - LOW: bug visual menor, reclamação isolada sem impacto claro`;
 
 async function classifyIncident({ message, user, channel }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY must be set');
+
+  const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const timeout = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 
   const payload = {
-    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+    system_instruction: {
+      parts: [{ text: SYSTEM_PROMPT }],
+    },
+    contents: [
       {
         role: 'user',
-        content: `canal: ${channel}\nusuario: ${user}\nmensagem: ${message}`,
+        parts: [{ text: `canal: ${channel}\nusuario: ${user}\nmensagem: ${message}` }],
       },
     ],
-    response_format: { type: 'json_object' },
-    temperature: 0.1,
-    max_tokens: 300,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.1,
+      maxOutputTokens: 300,
+    },
   };
 
   const response = await retry(
-    () =>
-      axios.post('https://api.openai.com/v1/chat/completions', payload, {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        timeout,
-      }),
+    () => axios.post(url, payload, { timeout }),
     { tries: 3, delayMs: 500 },
   );
 
-  const raw = response.data.choices?.[0]?.message?.content || '{}';
+  const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   return JSON.parse(raw);
 }
 
